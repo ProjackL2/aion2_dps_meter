@@ -36,6 +36,8 @@ A real-time DPS (Damage Per Second) meter specifically designed for **Aion 2**. 
 <!-- REQUIREMENTS -->
 ## Requirements
 
+Aion 2 with Large UI scale and Aion 1 control mode.
+
 * **Python 3.12** (tested and verified)
 * **Tesseract OCR** (external dependency)
 * **Windows OS** (for screen capture functionality)
@@ -70,7 +72,9 @@ App was tested with UI Proportion set to Larger.
 
 App was created for myself and cleaned up before release to github.
 
-I tested it with 2 monitors with requirements mentioned upper. Feel free to fork or write issues. Code can have bugs or bad patterns.
+I tested it with 2 monitors with requirements mentioned upper. Feel free to fork. Code can have bugs or bad patterns.
+
+Use with Large UI scale and Aion 1 control mode(prevents combat log window close).
 
 Data gathered from combat log can be used in more detailed analysis(by skills/by multiplier types)
 
