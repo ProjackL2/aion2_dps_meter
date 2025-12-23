@@ -15,6 +15,8 @@
 
 A real-time DPS (Damage Per Second) meter specifically designed for **Aion 2**. The application captures screenshots of the in-game combat log, uses OCR (Optical Character Recognition) to extract text, and calculates damage metrics with live visualization.
 
+If u need Chinese version, use @crazzyHuang solution available here:  https://github.com/crazzyHuang/aion2_dps_meter
+
 ### Key Features
 
 * **Real-time DPS Visualization** - Live graphs showing moving average and overall average DPS
@@ -55,8 +57,40 @@ Download and install Tesseract OCR from the official repository:
 
 **Note:** The path to Tesseract must be configured in `config.ini` after installation.
 
-### 2. Clone the Repository
+### 2. Clone/Download the Repository
 
+
+### 3. Install Python Dependencies
+Make sure you have Python 3.12(tested on it) installed and added to your PATH.
+From the project root directory, install all required Python packages:
+```
+pip install -r requirements.txt
+```
+If you have multiple Python versions installed, you may need to use:
+```
+python -m pip install -r requirements.txt
+```
+
+### 4. Configure the Application
+Before running the app, open config.ini and configure:
+Tesseract path (e.g. C:\Program Files\Tesseract-OCR\tesseract.exe)
+Screen capture region according to your monitor resolution
+Combat log position (must be full-height combat chat)
+Important configuration notes:
+- Combat chat must be set to Combat and opened in full height
+- UI Proportion must be set to Larger
+- Use Aion 1 control mode to prevent the combat log window from closing
+
+### 5. Run the Application
+Start the DPS meter by running:
+```
+python main.py
+```
+Once running:
+The app will begin capturing the combat log region
+DPS data will be calculated in real time
+A live matplotlib window will display DPS graphs
+If ocr_view is enabled, an OCR debug window will appear
 
 <!-- Configuration -->
 ## Configuration
