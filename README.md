@@ -76,9 +76,10 @@ Before running the app, open config.ini and configure:
 Tesseract path (e.g. C:\Program Files\Tesseract-OCR\tesseract.exe)
 Screen capture region according to your monitor resolution
 Combat log position (must be full-height combat chat)
-Important configuration notes:
+
+Important notes:
 - Combat chat must be set to Combat and opened in full height
-- UI Proportion must be set to Larger
+- UI Proportion must be set to Larger(tested with it)
 - Use Aion 1 control mode to prevent the combat log window from closing
 
 ### 5. Run the Application
@@ -91,15 +92,6 @@ The app will begin capturing the combat log region
 DPS data will be calculated in real time
 A live matplotlib window will display DPS graphs
 If ocr_view is enabled, an OCR debug window will appear
-
-<!-- Configuration -->
-## Configuration
-
-Open config.ini and configurate region to capture for your monitor and aion 2 combat chat position.
-
-App requires to open combat log as full height view. Chat bubble -> Combat.
-
-App was tested with UI Proportion set to Larger.
 
 <!-- Notes -->
 ## Notes
