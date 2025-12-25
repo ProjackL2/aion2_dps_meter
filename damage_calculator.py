@@ -3,17 +3,16 @@ class SkillDamageInfo:
         self.damage = []
         self.damage_by_multiplier_type = {}
         self.total_damage = 0
+        self.average = 0
 
 
 class DamageCalculator:
     def __init__(self):
         self.total_damage = 0
-        self.hits_count = 0
 
         self.first_timestamp_ms = 0
         self.last_timestamp_ms = 0
         self.time_passed_from_start_ms = 0
-        self.average_per_hit = 0
         self.average_per_time = 0
         self.moving_average = 0
 
@@ -24,7 +23,6 @@ class DamageCalculator:
     def process_damage(self, damage_list, now):
         # data will be cutted by moving average window further
         self.damage_data += damage_list
-        self.hits_count += len(damage_list)
 
         if self.first_timestamp_ms == 0:
             self.first_timestamp_ms = now
@@ -38,6 +36,7 @@ class DamageCalculator:
             skill_damage_info = self.by_skills[damage_info.skill_name]
             skill_damage_info.damage.append(damage_info.damage)
             skill_damage_info.total_damage += damage_info.damage
+            skill_damage_info.average = skill_damage_info.total_damage / len(skill_damage_info.damage)
 
             if damage_info.multiplier_type not in skill_damage_info.damage_by_multiplier_type:
                 skill_damage_info.damage_by_multiplier_type[damage_info.multiplier_type] = {
@@ -49,7 +48,6 @@ class DamageCalculator:
             multiplier_type_damage_info["total_damage"] += damage_info.damage
 
         time_passed_from_start_sec = self.time_passed_from_start_ms / 1000
-        self.average_per_hit = (self.total_damage / self.hits_count) if self.hits_count != 0 else 0
         self.average_per_time = (self.total_damage / time_passed_from_start_sec) if time_passed_from_start_sec != 0 else 0
         self.moving_average = self._moving_average_by_time(now)
         self.last_timestamp_ms = now

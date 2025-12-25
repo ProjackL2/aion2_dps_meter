@@ -134,7 +134,7 @@ class CombatLogParser:
                 if m:
                     result.append(DamageInfo(
                         timestamp=timestamp,
-                        skill_name=m.group(match.skill_name_group) if match.skill_name_group > 0 else "",
+                        skill_name=m.group(match.skill_name_group) if match.skill_name_group > 0 else "Additional Damage",
                         target_name=m.group(match.target_name_group) if match.target_name_group > 0 else "",
                         damage=int(m.group(match.damage_group).replace(".", "")) if match.damage_group > 0 else 0,
                         multiplier_type=m.group(match.multiplier_type_group) if match.multiplier_type_group > 0 else "",

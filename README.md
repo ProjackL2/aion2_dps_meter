@@ -131,5 +131,5 @@ If ocr_view enabled u can debug it viewing next window. Keep in mind that it wor
 
 [screenshot-1]: images/combat_log.png
 [screenshot-2]: images/capture_region.png
-[screenshot-3]: images/plot.png
+[screenshot-3]: images/plot.jpg
 [screenshot-4]: images/ocr_debug.png

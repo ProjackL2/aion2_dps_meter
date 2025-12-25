@@ -17,7 +17,9 @@ class Plotter:
         self.last_timestamp = 0
         self.fig = None
         self.ax = None
-        self.animation = None
+        self.ax_table = None
+        self.animation_plot = None
+        self.animation_table = None
         self.annot = None
 
     def run_blocking(self):
@@ -28,14 +30,31 @@ class Plotter:
 
 
     def _run_plot(self):
-        self.fig, self.ax = plt.subplots(figsize=(12, 6))
+        from matplotlib.gridspec import GridSpec
+
+        self.fig = plt.figure(figsize=(16, 8))
+        self.fig.canvas.manager.set_window_title('Aion 2: OCR DPS Meter')
+
+        # Grid: graph (70%), table (30%)
+        gs = GridSpec(1, 2, figure=self.fig, width_ratios=[7, 3], 
+                     wspace=0.05, left=0.06, right=0.98, top=0.95, bottom=0.08)
+
+        # Main DPS graph
+        self.ax = self.fig.add_subplot(gs[0, 0])
         self.ax.set_xlabel('Time (sec)')
-        self.ax.set_ylabel('DPS')
-        self.ax.set_title('DPS Meter - Damage Per Second')
+        self.ax.set_ylabel('Damage')
+        self.ax.set_title('Damage Per Second', fontsize=12, fontweight='bold', pad=10)
         self.ax.grid(True, alpha=0.3)
 
-        self.line_moving, = self.ax.plot([], [], label='Moving Average', linewidth=2, color='#FF6B6B')
-        self.line_avg, = self.ax.plot([], [], label='Average', linewidth=2, color='#95E1D3')
+        # Skill table area
+        self.ax_table = self.fig.add_subplot(gs[0, 1])
+        self.ax_table.axis('off')
+        self.ax_table.set_title('Skills Statistics', fontsize=12, fontweight='bold', pad=10)
+        self.ax_table.text(0.5, 0.5, 'No skill data available yet',
+                           ha='center', va='center', fontsize=10, color='gray')
+
+        self.line_moving, = self.ax.plot([], [], label='DPS', linewidth=2, color='#95E1D3')
+        self.line_avg, = self.ax.plot([], [], label='Average DPS', linewidth=2, color='#FF6B6B')
 
         self.ax.legend(loc='upper left')
 
@@ -46,20 +65,77 @@ class Plotter:
         self.annot.set_visible(False)
         self.fig.canvas.mpl_connect("motion_notify_event", self._on_hover)
 
-        self.animation = FuncAnimation(
+        self.animation_plot = FuncAnimation(
             self.fig, 
-            self._update_plot, 
+            self._update_plot_animation,
+            interval=1000,
+            blit=False,
+            cache_frame_data=False
+        )
+        self.animation_table = FuncAnimation(
+            self.fig,
+            self._update_table_animation,
             interval=1000,
             blit=False,
             cache_frame_data=False
         )
 
-        plt.tight_layout()
         plt.show()
 
-    def _update_plot(self, frame):
+    def _prepare_table_data(self):
+        if not self.damage_calculator.by_skills:
+            return [], []
+
+        headers = ['Skill Name', 'Count', 'Total', 'Average']
+        rows = []
+        for skill_name, skill_info in self.damage_calculator.by_skills.items():
+            rows.append([
+                skill_name,
+                str(len(skill_info.damage)),
+                f"{skill_info.total_damage:,.1f}",
+                f"{skill_info.average:,.1f}",
+                skill_info.total_damage
+            ])
+
+        rows.sort(key=lambda x: x[4], reverse=True)
+        rows = [row[:4] for row in rows]
+
+        return headers, rows
+
+    def _update_table_animation(self, frame):
+        if self.ax_table is None:
+            return []
+
+        self.ax_table.clear()
+        self.ax_table.axis('off')
+        self.ax_table.set_title('Skills Statistics', fontsize=12, fontweight='bold', pad=10)
+
+        headers, rows = self._prepare_table_data()
+
+        if not rows:
+            self.ax_table.text(0.5, 0.5, 'No skill data available yet',
+                              ha='center', va='center', fontsize=10, color='gray')
+            return []
+
+        cell_text = rows
+        col_labels = headers
+
+        table = self.ax_table.table(
+            cellText=cell_text,
+            colLabels=col_labels,
+            cellLoc='left',
+            loc='upper left',
+            colWidths=[0.45, 0.18, 0.20, 0.17]
+        )
+        table.auto_set_font_size(False)
+        table.set_fontsize(9)
+        table.scale(1, 1.2)
+
+        return []
+
+    def _update_plot_animation(self, frame):
         if self.last_timestamp == self.damage_calculator.last_timestamp_ms:
-            return self.line_moving, self.line_avg
+            return []
 
         if self.start_timestamp == 0:
             self.start_timestamp = self.damage_calculator.last_timestamp_ms
@@ -84,8 +160,7 @@ class Plotter:
                     self.ax.set_xlim(0, max(times[-1], 10))
                 else:
                     self.ax.set_xlim(times[0], times[-1])
-
-        return self.line_moving, self.line_avg
+        return []
 
     def _find_nearest_point(self, x, y, line):
         xdata, ydata = line.get_data()
