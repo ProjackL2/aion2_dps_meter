@@ -18,8 +18,10 @@ class Plotter:
         self.fig = None
         self.ax = None
         self.ax_table = None
+        self.ax_multipliers = None
         self.animation_plot = None
         self.animation_table = None
+        self.animation_multipliers = None
         self.annot = None
 
     def run_blocking(self):
@@ -35,23 +37,33 @@ class Plotter:
         self.fig = plt.figure(figsize=(16, 8))
         self.fig.canvas.manager.set_window_title('Aion 2: OCR DPS Meter')
 
-        # Grid: graph (70%), table (30%)
-        gs = GridSpec(1, 2, figure=self.fig, width_ratios=[7, 3], 
-                     wspace=0.05, left=0.06, right=0.98, top=0.95, bottom=0.08)
+        # Grid: graph (70%) on left, two tables (30%) on right
+        gs_main = GridSpec(1, 2, figure=self.fig, width_ratios=[7, 3], 
+                          wspace=0.05, left=0.06, right=0.98, top=0.95, bottom=0.08)
 
-        # Main DPS graph
-        self.ax = self.fig.add_subplot(gs[0, 0])
+        # Subdivide right column into two rows for two tables
+        gs_right = gs_main[0, 1].subgridspec(2, 1, height_ratios=[3, 1], hspace=0.3)
+
+        # Main DPS graph (left side)
+        self.ax = self.fig.add_subplot(gs_main[0, 0])
         self.ax.set_xlabel('Time (sec)')
         self.ax.set_ylabel('Damage')
         self.ax.set_title('Damage Per Second', fontsize=12, fontweight='bold', pad=10)
         self.ax.grid(True, alpha=0.3)
 
-        # Skill table area
-        self.ax_table = self.fig.add_subplot(gs[0, 1])
+        # Skills table area (top right)
+        self.ax_table = self.fig.add_subplot(gs_right[0, 0])
         self.ax_table.axis('off')
         self.ax_table.set_title('Skills Statistics', fontsize=12, fontweight='bold', pad=10)
         self.ax_table.text(0.5, 0.5, 'No skill data available yet',
                            ha='center', va='center', fontsize=10, color='gray')
+
+        # Multipliers table area (bottom right)
+        self.ax_multipliers = self.fig.add_subplot(gs_right[1, 0])
+        self.ax_multipliers.axis('off')
+        self.ax_multipliers.set_title('Hit Types', fontsize=12, fontweight='bold', pad=10)
+        self.ax_multipliers.text(0.5, 0.5, 'No multiplier data available yet',
+                                ha='center', va='center', fontsize=10, color='gray')
 
         self.line_moving, = self.ax.plot([], [], label='DPS', linewidth=2, color='#95E1D3')
         self.line_avg, = self.ax.plot([], [], label='Average DPS', linewidth=2, color='#FF6B6B')
@@ -80,7 +92,49 @@ class Plotter:
             cache_frame_data=False
         )
 
+        self.animation_multipliers = FuncAnimation(
+            self.fig,
+            self._update_multipliers_animation,
+            interval=1000,
+            blit=False,
+            cache_frame_data=False
+        )
+
         plt.show()
+
+    def _prepare_multipliers_data(self):
+        multipliers_count = {}
+        total_hits = 0
+
+        # Collect multiplier statistics from all skills
+        for skill_name, skill_info in self.damage_calculator.by_skills.items():
+            for multiplier_type, mult_data in skill_info.damage_by_multiplier_type.items():
+                hit_count = len(mult_data["damage"])
+                total_hits += hit_count
+
+                if multiplier_type not in multipliers_count:
+                    multipliers_count[multiplier_type] = 0
+                multipliers_count[multiplier_type] += hit_count
+
+        if total_hits == 0:
+            return [], []
+
+        # Prepare table data
+        headers = ['Type', 'Count', 'Percentage']
+        rows = []
+
+        # Sort by count (descending)
+        sorted_multipliers = sorted(multipliers_count.items(), key=lambda x: x[1], reverse=True)
+
+        for mult_type, count in sorted_multipliers:
+            percentage = (count / total_hits * 100) if total_hits > 0 else 0
+            rows.append([
+                mult_type,
+                str(count),
+                f"{percentage:.1f}%"
+            ])
+
+        return headers, rows
 
     def _prepare_table_data(self):
         if not self.damage_calculator.by_skills:
@@ -125,11 +179,44 @@ class Plotter:
             colLabels=col_labels,
             cellLoc='left',
             loc='upper left',
-            colWidths=[0.45, 0.18, 0.20, 0.17]
+            colWidths=[0.46, 0.13, 0.22, 0.19]
         )
         table.auto_set_font_size(False)
         table.set_fontsize(9)
         table.scale(1, 1.2)
+
+        return []
+
+    def _update_multipliers_animation(self, frame):
+        """Callback for multipliers table animation"""
+        if self.ax_multipliers is None:
+            return []
+
+        self.ax_multipliers.clear()
+        self.ax_multipliers.axis('off')
+        self.ax_multipliers.set_title('Hit Types', fontsize=12, fontweight='bold', pad=10)
+
+        headers, rows = self._prepare_multipliers_data()
+
+        if not rows:
+            self.ax_multipliers.text(0.5, 0.5, 'No multiplier data available yet',
+                                    ha='center', va='center', fontsize=10, color='gray')
+            return []
+
+        cell_text = rows
+        col_labels = headers
+
+        table = self.ax_multipliers.table(
+            cellText=cell_text,
+            colLabels=col_labels,
+            cellLoc='left',
+            loc='upper left',
+            colWidths=[0.40, 0.30, 0.30]
+        )
+
+        table.auto_set_font_size(False)
+        table.set_fontsize(8)
+        table.scale(1, 1.5)
 
         return []
 

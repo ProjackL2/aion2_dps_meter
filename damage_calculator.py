@@ -38,14 +38,16 @@ class DamageCalculator:
             skill_damage_info.total_damage += damage_info.damage
             skill_damage_info.average = skill_damage_info.total_damage / len(skill_damage_info.damage)
 
-            if damage_info.multiplier_type not in skill_damage_info.damage_by_multiplier_type:
-                skill_damage_info.damage_by_multiplier_type[damage_info.multiplier_type] = {
-                    "damage": [],
-                    "total_damage": 0
-                }
-            multiplier_type_damage_info = skill_damage_info.damage_by_multiplier_type[damage_info.multiplier_type]
-            multiplier_type_damage_info["damage"].append(damage_info.damage)
-            multiplier_type_damage_info["total_damage"] += damage_info.damage
+            # do not take additional damage into account
+            if damage_info.skill_name != "Additional Damage":
+                if damage_info.multiplier_type not in skill_damage_info.damage_by_multiplier_type:
+                    skill_damage_info.damage_by_multiplier_type[damage_info.multiplier_type] = {
+                        "damage": [],
+                        "total_damage": 0
+                    }
+                multiplier_type_damage_info = skill_damage_info.damage_by_multiplier_type[damage_info.multiplier_type]
+                multiplier_type_damage_info["damage"].append(damage_info.damage)
+                multiplier_type_damage_info["total_damage"] += damage_info.damage
 
         time_passed_from_start_sec = self.time_passed_from_start_ms / 1000
         self.average_per_time = (self.total_damage / time_passed_from_start_sec) if time_passed_from_start_sec != 0 else 0
