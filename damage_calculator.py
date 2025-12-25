@@ -7,24 +7,31 @@ class SkillDamageInfo:
 
 class DamageCalculator:
     def __init__(self):
-        self.total = 0
-        self.count = 0
+        self.total_damage = 0
+        self.hits_count = 0
 
+        self.first_timestamp_ms = 0
         self.last_timestamp_ms = 0
-        self.average = 0
+        self.time_passed_from_start_ms = 0
+        self.average_per_hit = 0
+        self.average_per_time = 0
         self.moving_average = 0
 
-        self.data = []
+        self.damage_data = []
         self.by_skills = {}
 
 
     def process_damage(self, damage_list, now):
         # data will be cutted by moving average window further
-        self.data += damage_list
-        self.count += len(damage_list)
+        self.damage_data += damage_list
+        self.hits_count += len(damage_list)
+
+        if self.first_timestamp_ms == 0:
+            self.first_timestamp_ms = now
+        self.time_passed_from_start_ms = now - self.first_timestamp_ms
 
         for damage_info in damage_list:
-            self.total += damage_info.damage
+            self.total_damage += damage_info.damage
 
             if damage_info.skill_name not in self.by_skills:
                 self.by_skills[damage_info.skill_name] = SkillDamageInfo()
@@ -41,20 +48,21 @@ class DamageCalculator:
             multiplier_type_damage_info["damage"].append(damage_info.damage)
             multiplier_type_damage_info["total_damage"] += damage_info.damage
 
-        self.last_timestamp_ms = now
-        self.average = self.total / self.count if self.count != 0 else 0
+        time_passed_from_start_sec = self.time_passed_from_start_ms / 1000
+        self.average_per_hit = (self.total_damage / self.hits_count) if self.hits_count != 0 else 0
+        self.average_per_time = (self.total_damage / time_passed_from_start_sec) if time_passed_from_start_sec != 0 else 0
         self.moving_average = self._moving_average_by_time(now)
+        self.last_timestamp_ms = now
 
-        print("=", now, ":", round(self.moving_average, 2), round(self.average, 2))
+        print("=", now, " total:", self.total_damage, "dps:", round(self.moving_average, 2), "avg:", round(self.average_per_time, 2))
 
 
     def _moving_average_by_time(self, now, window_ms=1000):
-        self.data = [d for d in self.data if d.timestamp >= now - window_ms]
+        self.damage_data = [d for d in self.damage_data if d.timestamp >= now - window_ms]
 
-        window_size = len(self.data)
-
+        window_size = len(self.damage_data)
         if window_size == 0:
             return 0
 
-        total_damage = sum(d.damage for d in self.data)
-        return total_damage / window_size
+        total_damage = sum(d.damage for d in self.damage_data)
+        return total_damage

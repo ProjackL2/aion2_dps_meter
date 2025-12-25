@@ -69,7 +69,7 @@ class Plotter:
 
         self.timestamps.append(current_time / 1000.00)
         self.moving_avg_data.append(self.damage_calculator.moving_average)
-        self.avg_data.append(self.damage_calculator.average)
+        self.avg_data.append(self.damage_calculator.average_per_time)
 
         if len(self.timestamps) > 0:
             times = list(self.timestamps)
