@@ -7,4 +7,4 @@ opencv-python==4.10.0.84
 scikit-image==0.24.0
 packaging==24.2
 pillow==11.1.0
-six==1.15.0
+six==1.16.0
