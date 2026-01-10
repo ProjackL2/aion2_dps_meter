@@ -1,9 +1,10 @@
 import re
 
+from localize import lang
+
 from pathlib import Path
 
 from utils import fuzzy_string_match, format_timestamp
-
 
 class ParserConfig:
     def __init__(self, pattern, skill_name_group=-1, target_name_group=-1, damage_group=-1, multiplier_type_group=-1):
@@ -12,15 +13,6 @@ class ParserConfig:
         self.target_name_group = target_name_group
         self.damage_group = damage_group
         self.multiplier_type_group = multiplier_type_group
-
-
-damage_pattern = re.compile(r"Used (.*?) against (.*?) and dealt ([0-9]+[0-9.]*) (\[?Perfect]?|\[?Critical]?|\[?Smite]?|\[?Double Critical]?|\[?Perfect Critical]?|) *damage.")
-additional_damage_pattern = re.compile(r"Dealt additional damage of ([0-9]+[0-9.]*) to (.*).")
-
-damage_matches = [
-    ParserConfig(pattern=damage_pattern, skill_name_group=1, target_name_group=2, damage_group=3, multiplier_type_group=4),
-    ParserConfig(pattern=additional_damage_pattern, damage_group=1, target_name_group=2),
-]
 
 class DamageInfo:
     def __init__(self, timestamp, skill_name, target_name, damage, multiplier_type):
@@ -32,14 +24,24 @@ class DamageInfo:
 
 
 class CombatLogParser:
-    def __init__(self):
+    def __init__(self, language):
         self.prev_logs = []
         self.damage_log = False
         self.show_ignored = False
         self.save_combat_log = False
+        self.language = language
+        self.langset = lang[language]
         self.log_file_path = Path("./logs/combat_log.log")
         self.log_file_path.parent.mkdir(exist_ok=True, parents=True)
-
+        self.construct_patterns(language)
+        
+    def construct_patterns(self, language):
+        damage_pattern = re.compile(self.langset['damage_pattern'])
+        additional_damage_pattern = re.compile(self.langset['additional_damage_pattern'])
+        self.damage_matches = [
+            ParserConfig(pattern=damage_pattern, **self.langset['damage_pattern_groups']),
+            ParserConfig(pattern=additional_damage_pattern, **self.langset['additional_damage_pattern_groups'])
+        ]
 
     def set_debug(self, damage_log, show_ignored):
         self.damage_log = damage_log
@@ -129,15 +131,15 @@ class CombatLogParser:
         result = []
         for log in logs:
             matched = False
-            for match in damage_matches:
+            for match in self.damage_matches:
                 m = match.pattern.search(log)
                 if m:
                     result.append(DamageInfo(
                         timestamp=timestamp,
-                        skill_name=m.group(match.skill_name_group) if match.skill_name_group > 0 else "Additional Damage",
+                        skill_name=m.group(match.skill_name_group) if match.skill_name_group > 0 else self.langset['str_additional_damage'],
                         target_name=m.group(match.target_name_group) if match.target_name_group > 0 else "",
                         damage=int(m.group(match.damage_group).replace(".", "")) if match.damage_group > 0 else 0,
-                        multiplier_type=self._prepare_multiplier_type(m.group(match.multiplier_type_group)) if match.multiplier_type_group > 0 else "Normal",
+                        multiplier_type=self._prepare_multiplier_type(m.group(match.multiplier_type_group)) if match.multiplier_type_group > 0 else self.langset['str_normal'],
                     ))
                     matched = True
                     break
@@ -147,7 +149,7 @@ class CombatLogParser:
 
     def _prepare_multiplier_type(self, multiplier_type):
         multiplier_type = multiplier_type.replace("[", "").replace("]", "")
-        return multiplier_type if multiplier_type != "" else "Normal"
+        return multiplier_type if multiplier_type != "" else self.langset['str_normal']
 
     def _get_new_damage(self, logs, timestamp):
         new_logs = self._detect_new_logs(logs)

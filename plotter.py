@@ -2,11 +2,13 @@ import matplotlib.pyplot as plt
 
 from matplotlib.animation import FuncAnimation
 from collections import deque
-
+from localize import lang
 
 class Plotter:
-    def __init__(self, damage_calculator, max_points=100):
+    def __init__(self, damage_calculator, language, max_points=100):
         self.damage_calculator = damage_calculator
+        self.language = language
+        self.langset = lang.get(language)
         self.max_points = max_points
 
         self.timestamps = deque(maxlen=max_points)
@@ -23,6 +25,9 @@ class Plotter:
         self.animation_table = None
         self.animation_multipliers = None
         self.annot = None
+        
+        if self.language == 'ko':
+            plt.rc('font', family='NanumGothic') # Small tweak for korean font support
 
     def run_blocking(self):
         self._run_plot()
@@ -46,23 +51,23 @@ class Plotter:
 
         # Main DPS graph (left side)
         self.ax = self.fig.add_subplot(gs_main[0, 0])
-        self.ax.set_xlabel('Time (sec)')
-        self.ax.set_ylabel('Damage')
-        self.ax.set_title('Damage Per Second', fontsize=12, fontweight='bold', pad=10)
+        self.ax.set_xlabel(self.langset['str_xlabel'])
+        self.ax.set_ylabel(self.langset['str_ylabel'])
+        self.ax.set_title(self.langset['str_header'], fontsize=12, fontweight='bold', pad=10)
         self.ax.grid(True, alpha=0.3)
 
         # Skills table area (top right)
         self.ax_table = self.fig.add_subplot(gs_right[0, 0])
         self.ax_table.axis('off')
-        self.ax_table.set_title('Skills Statistics', fontsize=12, fontweight='bold', pad=10)
-        self.ax_table.text(0.5, 0.5, 'No skill data available yet',
+        self.ax_table.set_title(self.langset['str_skills_header'], fontsize=12, fontweight='bold', pad=10)
+        self.ax_table.text(0.5, 0.5, self.langset['str_no_data_skill'],
                            ha='center', va='center', fontsize=10, color='gray')
 
         # Multipliers table area (bottom right)
         self.ax_multipliers = self.fig.add_subplot(gs_right[1, 0])
         self.ax_multipliers.axis('off')
-        self.ax_multipliers.set_title('Hit Types', fontsize=12, fontweight='bold', pad=10)
-        self.ax_multipliers.text(0.5, 0.5, 'No multiplier data available yet',
+        self.ax_multipliers.set_title(self.langset['str_hittypes_header'], fontsize=12, fontweight='bold', pad=10)
+        self.ax_multipliers.text(0.5, 0.5, self.langset['str_no_data_mult'],
                                 ha='center', va='center', fontsize=10, color='gray')
 
         self.line_moving, = self.ax.plot([], [], label='DPS', linewidth=2, color='#95E1D3')
@@ -120,7 +125,7 @@ class Plotter:
             return [], []
 
         # Prepare table data
-        headers = ['Type', 'Count', 'Percentage']
+        headers = self.langset['str_hittypes_cols']
         rows = []
 
         # Sort by count (descending)
@@ -140,7 +145,7 @@ class Plotter:
         if not self.damage_calculator.by_skills:
             return [], []
 
-        headers = ['Skill Name', 'Count', 'Total', 'Average']
+        headers = self.langset['str_skills_cols']
         rows = []
         for skill_name, skill_info in self.damage_calculator.by_skills.items():
             rows.append([
@@ -162,12 +167,12 @@ class Plotter:
 
         self.ax_table.clear()
         self.ax_table.axis('off')
-        self.ax_table.set_title('Skills Statistics', fontsize=12, fontweight='bold', pad=10)
+        self.ax_table.set_title(self.langset['str_skills_header'], fontsize=12, fontweight='bold', pad=10)
 
         headers, rows = self._prepare_table_data()
 
         if not rows:
-            self.ax_table.text(0.5, 0.5, 'No skill data available yet',
+            self.ax_table.text(0.5, 0.5, self.langset['str_no_data_skill'],
                               ha='center', va='center', fontsize=10, color='gray')
             return []
 
@@ -194,12 +199,12 @@ class Plotter:
 
         self.ax_multipliers.clear()
         self.ax_multipliers.axis('off')
-        self.ax_multipliers.set_title('Hit Types', fontsize=12, fontweight='bold', pad=10)
+        self.ax_multipliers.set_title(self.langset['str_hittypes_header'], fontsize=12, fontweight='bold', pad=10)
 
         headers, rows = self._prepare_multipliers_data()
 
         if not rows:
-            self.ax_multipliers.text(0.5, 0.5, 'No multiplier data available yet',
+            self.ax_multipliers.text(0.5, 0.5, self.langset['str_no_data_mult'],
                                     ha='center', va='center', fontsize=10, color='gray')
             return []
 
@@ -280,7 +285,7 @@ class Plotter:
                 self.fig.canvas.draw_idle()
             return
 
-        for line, label in [(self.line_moving, 'Moving Average'), (self.line_avg, 'Average')]:
+        for line, label in [(self.line_moving, self.langset['str_moving_avg']), (self.line_avg, self.langset['str_avg'])]:
             if len(line.get_xdata()) == 0:
                 continue
 
