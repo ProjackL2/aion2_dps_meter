@@ -13,6 +13,7 @@ from damage_calculator import DamageCalculator
 from screen_capturer import ScreenCapturer, Capture
 from utils import images_not_similar
 from plotter import Plotter
+from localize import lang
 
 extract_color_ranges = [
     # White text (normal text)
@@ -40,6 +41,12 @@ class DPSMeter:
         capture_region_y = int(config.get('capture', 'region_y'))
         capture_region_width = int(config.get('capture', 'region_width'))
         capture_region_height = int(config.get('capture', 'region_height'))
+        
+        language = config.get('language', 'lang')
+        if language not in lang:
+            #if language is not within supported languages, default to english
+            print(f"[Warning] Language '{language}' not supported. Defaulting to English ('en').")
+            language = 'en'
 
         save_combat_log = config.get('debug', 'save_combat_log') == "1"
         ignored_log = config.get('debug', 'ignored_log') == "1"
@@ -63,16 +70,17 @@ class DPSMeter:
         self.ocr = CombatLogOCR(tesseract_cmd=tesseract_cmd,
                                 tesseract_config=tesseract_config,
                                 extract_color_ranges=extract_color_ranges,
+                                language=language,
                                 resize_factor=2,
                                 resize_interpolation=cv2.INTER_NEAREST_EXACT)
 
-        self.parser = CombatLogParser()
+        self.parser = CombatLogParser(language=language)
         self.parser.set_debug(damage_log, ignored_log)
         self.parser.set_write_log(save_combat_log)
 
-        self.dps_meter = DamageCalculator()
+        self.dps_meter = DamageCalculator(language=language)
 
-        self.plotter = Plotter(self.dps_meter, max_points=100)
+        self.plotter = Plotter(self.dps_meter, language, max_points=100)
 
 
     def run(self):

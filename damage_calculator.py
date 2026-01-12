@@ -1,3 +1,5 @@
+from localize import lang
+
 class SkillDamageInfo:
     def __init__(self):
         self.damage = []
@@ -7,7 +9,9 @@ class SkillDamageInfo:
 
 
 class DamageCalculator:
-    def __init__(self):
+    def __init__(self, language):
+        self.language = language
+        self.langset = lang.get(language)
         self.total_damage = 0
 
         self.first_timestamp_ms = 0
@@ -39,7 +43,7 @@ class DamageCalculator:
             skill_damage_info.average = skill_damage_info.total_damage / len(skill_damage_info.damage)
 
             # do not take additional damage into account
-            if damage_info.skill_name != "Additional Damage":
+            if damage_info.skill_name != self.langset['str_additional_damage']:
                 if damage_info.multiplier_type not in skill_damage_info.damage_by_multiplier_type:
                     skill_damage_info.damage_by_multiplier_type[damage_info.multiplier_type] = {
                         "damage": [],
